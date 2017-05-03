@@ -1,0 +1,442 @@
+---
+title: "allstatefinal solution"
+author: "REVANTH"
+date: "April 2, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+str(allstatetrain)
+```
+
+```{r}
+summary(allstatetrain)
+```
+```{r}
+apply(allstatetest[,-1],2,table)
+```
+```{r}
+x1<-boxplot(allstatetrain$cont1)
+```
+```{r}
+par(mfrow=c(3,5))
+x1<-boxplot(allstatetrain$cont1)
+x2<-boxplot(allstatetrain$cont2)
+x3<-boxplot(allstatetrain$cont3)
+x4<-boxplot(allstatetrain$cont4)
+x5<-boxplot(allstatetrain$cont5)
+x6<-boxplot(allstatetrain$cont6)
+x7<-boxplot(allstatetrain$cont7)
+x8<-boxplot(allstatetrain$cont8)
+x9<-boxplot(allstatetrain$cont9)
+x10<-boxplot(allstatetrain$cont10)
+x11<-boxplot(allstatetrain$cont11)
+x12<-boxplot(allstatetrain$cont12)
+x13<-boxplot(allstatetrain$cont13)
+x14<-boxplot(allstatetrain$cont14)
+```
+```{r}
+par(mfrow=c(1,3))
+x7<-boxplot(allstatetrain$cont7)
+x9<-boxplot(allstatetrain$cont9)
+x10<-boxplot(allstatetrain$cont10)
+```
+
+```{r}
+x7$out
+```
+
+```{r}
+x9$out
+```
+```{r}
+x10$out
+```
+
+```{r}
+length(x7$out)
+length(x9$out)
+length(x10$out)
+```
+
+
+```{r}
+t3<-quantile(allstatetrain$cont7,prob=c(0.00,0.005,0.94,0.97))
+t3
+```
+
+```{r}
+t2<-quantile(allstatetrain$cont9,prob=c(0.01,0.05,0.93,0.94,0.95,0.96,0.97,0.985,0.99,1.0))
+t2
+```
+```{r}
+t1<-quantile(allstatetrain$cont10,prob=c(0.01,0.05,0.98,0.997))
+t1
+```
+
+```{r}
+#allstatetrain$cont7_new<-ifelse(allstatetrain$cont7>t3[4],t3[4],allstatetrain$cont7)
+allstatetrain$cont9_new<-ifelse(allstatetrain$cont9<t2[1],t2[1],ifelse(allstatetrain$cont9>t2[3],t2[3],allstatetrain$cont9))
+#allstatetrain$cont10_new<-ifelse(allstatetrain$cont10>t1[4],t1[4],allstatetrain$cont10)
+```
+
+```{r}
+x7_new<-boxplot(allstatetrain$cont7_new)
+```
+```{r}
+x9_new<-boxplot(allstatetrain$cont9_new)
+```
+```{r}
+x10_new<-boxplot(allstatetrain$cont10_new)
+```
+```{r}
+par(mfrow=c(1,3))
+x7_new<-boxplot(allstatetrain$cont7_new)
+x9_new<-boxplot(allstatetrain$cont9_new)
+x10_new<-boxplot(allstatetrain$cont10_new)
+```
+```{r}
+#copytrain<-allstatetrain
+copytrain$cont7<-NULL
+copytrain$cont9<-NULL
+copytrain$cont10<-NULL
+```
+```{r}
+copytrain$cont7<-copytrain$cont7_new
+copytrain$cont9<-copytrain$cont9_new
+copytrain$cont10<-copytrain$cont10_new
+```
+
+```{r}
+copytrain$cont7_new<-NULL
+copytrain$cont10_new<-NULL
+copytrain$cont9_new<-NULL
+```
+```{r}
+plot(density(log(copytrain$loss)));
+
+```
+
+
+```{r}
+#library(ggplot2)
+lossplot<-ggplot(copytrain,aes(log(copytrain$loss)))
+lossplot+geom_density(kernel="gaussian",color="red")+ggtitle("density plot for log(loss) variable")
+```
+
+
+```{r}
+library(caret)
+library(lattice)
+idVar="id"
+library(ggplot2)
+catVars=paste0("cat",seq(1,116))
+contVars=paste0("cont",seq(1,14))
+targetvar="loss"
+
+```
+```{r}
+library(corrplot)
+corContpred= cor(copytrain[,contVars])
+corrplot(corContpred)
+```
+
+```{r}
+zero.var= nearZeroVar(copytrain, saveMetrics=T)
+zero.var
+```
+```{r}
+#head(zero.var[zero.var$nzv==TRUE,])
+rm(train_boost,train_output_vector,train_sparse_matrix,test_sparse_matrix)
+```
+
+```{r}
+#cross validation
+crosstrain<-copytrain[1:20000,-c(16,23,63,71)]
+#library(lattice)
+#library(caret)
+
+fitCV<-train(log(loss)~.,  data= crosstrain, method="lm",trControl=trainControl(method = "CV",number=10,verboseIter=TRUE))
+fitCV
+
+
+```
+
+
+```{r}
+fitCV$finalModel
+```
+
+```{r}
+table(copytrain$cat62);table(copytrain$cat15);table(copytrain$cat70);table(copytrain$cat76)
+```
+
+
+ 
+```{r}
+rm(train_linboost)
+```
+
+```{r}
+fit <- lm(log(loss)~ cat1   +cat2   +cat3   +cat4   +cat5   +cat6   +cat7   +cat8  
+          +cat9   +cat10   +cat11   +cat12   +cat13   +cat14  +cat16  
+          +cat17   +cat18   +cat19   +cat20   +cat21     +cat23   +cat24  
+          +cat25   +cat26   +cat27   +cat28   +cat29   +cat30   +cat31   +cat32  
+          +cat33   +cat34   +cat35   +cat36   +cat37   +cat38   +cat39   +cat40  
+          +cat41   +cat42   +cat43   +cat44   +cat45   +cat46   +cat47   +cat48  
+          +cat49   +cat50   +cat51   +cat52   +cat53   +cat54   +cat55   +cat56  
+          +cat57   +cat58   +cat59   +cat60   +cat61      +cat63   +cat64  
+          +cat65   +cat66   +cat67   +cat68   +cat69      +cat71   +cat72  
+          +cat73   +cat74   +cat75   +cat76   +cat77   +cat78   +cat79   +cat80  
+          +cat81   +cat82   +cat83   +cat84   +cat85   +cat86   +cat87   +cat88  
+          +cat89   +cat90   +cat91   +cat92   +cat93   +cat94   +cat95   +cat96  
+          +cat97   +cat98   +cat99   +cat100  +cat101  +cat102  +cat103  +cat104 
+          +cat105  +cat106  +cat107  +cat108  +cat109  +cat110  +cat111  +cat112 
+          +cat113  +cat114  +cat115  +cat116 +cont1 + cont2 + cont3+  cont4+  cont5+  cont6+ cont7+  cont8  +cont9+  cont10+ cont11+
+    cont13 +cont14,data=copytrain)
+```
+
+```{r}
+summary(fit)
+```
+```{r}
+library(MASS)
+step_fit <-stepAIC(fit)
+```
+
+```{r}
+#sqrt(mean(((exp(fit$residuals)^2))))
+exp(fit$residuals)
+```
+
+```{r}
+#residual plot
+library(ggplot2)
+plot(fit$fitted.values,fit$residuals)
+abline(0,0)   #horizontal line at 0  
+#using ggplot2
+#f<-ggplot(fit,aes(fit$fitted.values,fit$residuals))
+```
+
+```{r}
+#reisdual plot
+#f<-ggplot(fit,aes(fit$fitted.values,fit$residuals))
+#f+geom_point(color="red")
+#abline(0,0)
+#a<-ggplot(fit,aes(fit$residuals))
+a+ geom_dotplot(binwidth=0.5,color="blue")
+```
+
+
+```{r}
+fit$fitted.values
+```
+
+```{r}
+fitCV
+```
+
+
+```{r}
+#plotting fitted line
+#library(lattice)
+xyplot(log(loss)~ cat1   +cat2   +cat3   +cat4   +cat5   +cat6   +cat7   +cat8  
+          +cat9   +cat10   +cat11   +cat12   +cat13   +cat14    +cat16  
+          +cat17   +cat18   +cat19   +cat20   +cat21     +cat23   +cat24  
+          +cat25   +cat26   +cat27   +cat28   +cat29   +cat30   +cat31   +cat32  
+          +cat33   +cat34   +cat35   +cat36   +cat37   +cat38   +cat39   +cat40 +cat113  +cat114  +cat115  +cat116 +cont1 + cont2 + cont3+  cont4+  cont5+  cont6+ cont7+  cont8  +cont9+  cont10+ cont11+cont13 +cont14,data=copytrain,type=c("p","r"),col.line="red" )
+```
+
+
+
+
+```{r}
+copytest<-allstatetest
+```
+
+```{r}
+#copytrain$cat89<-allstatetrain$cat89 
+#copytest$cat113<-allstatetest$cat113
+#B<- data.frame(copytest$cat113)
+#table(B)
+#library(dplyr)
+D<-mutate(B, new= ifelse(copytest$cat116==  "A"|copytest$cat116=="AI"|copytest$cat116=="AQ"|copytest$cat116=="BE"|copytest$cat116=="BH"|copytest$cat116=="BJ"|copytest$cat116=="BN"|copytest$cat116=="BR"|copytest$cat116=="DB"|copytest$cat116=="EM"|copytest$cat116=="ER"|copytest$cat116=="ET"|copytest$cat116=="EX"|copytest$cat116=="FY"|copytest$cat116=="HS"|copytest$cat116=="IS"|copytest$cat116=="IW"|copytest$cat116=="JS"|copytest$cat116=="KO"|copytest$cat116=="LP"|copytest$cat116=="LS"|copytest$cat116=="MX"|copytest$cat116=="N","HK",copytest$cat116))
+#D<-mutate(B,new=ifelse(copytest$cat113=="AA"|copytest$cat113=="R","A",copytest$cat113))
+
+copytest$cat116<-NULL
+copytest$cat116<-D$new
+#table(copytrain$cat113)
+#table(copytest$cat92)
+#table(D$new)
+predictTest = predict(fit, newdata=copytest)
+predictTest
+```
+```{r}
+predictTestCV = predict(fitCV, newdata=copytest)
+predictTestCV
+#loglosslinear<-exp(predictTest)
+#View(loglosslinear)
+```
+
+
+
+```{r}
+#install.packages("xlsx")
+#library(rJava)
+#library(xlsxjars)
+write.table(loglosslinear, "D:/advance DM/allstate/predictTest2.xlsx") 
+
+```
+
+```{r}
+write.table(loglosslinear, "D:/advance DM/allstate/predictTest2.csv")
+```
+
+
+```{r}
+#XGBOOST MODEL
+
+require(xgboost)
+library(xgboost)
+library(MatrixModels)
+library(Matrix)
+library(data.table)
+#install.packages("dtplyr")
+library(dtplyr)
+```
+
+```{r}
+#xgboosttrain$loss<-log(copytrain$loss)
+
+#xgboosttrain<-copytrain
+#xgboosttest<-copytest
+trainfeat<- data.table ( xgboosttrain[1:20000,-c(16,23,63,71)])
+#testfeat<-data.table(xgboosttest[-c(16,23,63,71,110,111,113,114,117)])
+```
+
+```{r}
+rm(x12,x13,x14,x7,x7_new,x8,x9,x9_new)
+```
+
+```{r}
+train_sparse_matrix= sparse.model.matrix(loss~.-1,data=trainfeat)
+# converting every other variable into numeric vector except the response(loss) variable
+```
+
+
+```{r}
+testfact=cbind(testfeat,loss=0)
+
+```
+
+
+```{r}
+test_sparse_matrix= sparse.model.matrix(loss~.-1,data=testfact)
+```
+
+
+```{r}
+train_output_vector=trainfeat$loss
+```
+
+```{r}
+train_boost=xgboost(data=train_sparse_matrix,label=train_output_vector,
+            nrounds=200,objective="reg:linear",eta=1,max_delta_step=100,max_depth=10,
+            min_child_weight=100,subsample=0.75,eval_metric="rmse")
+```
+```{r}
+#importance<-xgb.importance(feature_names = colnames(train_sparse_matrix),model=train_boost)
+importance
+```
+```{r}
+#install.packages("DiagrammeR")
+#library(DiagrammeR)
+#install.packages("Ckmeans.1d.dp")
+#library(Ckmeans.1d.dp)
+#GGIMPXGBOOST<-xgb.ggplot.importance(importance,measure ="Frequency",rel_to_first = TRUE)
+#GGIMPXGBOOST+ggplot2::ylab("Frequency")
+xgb.plot.tree(feature_names = colnames(train_sparse_matrix),model = train_boost,n_first_tree = 2)
+```
+
+
+```{r}
+train_linboost<-xgboost(data=train_sparse_matrix,label = train_output_vector,nrounds=200,objective="reg:linear",params = list(booster="gblinear",lambda=10,lamda_bias=5,alpha=5))
+```
+
+```{r}
+summary(train_boost)
+```
+
+
+
+```{r}
+#cross validation for xgboost model
+
+#dtrain<-xgb.DMatrix(trainfeat,label=train_output_vector)
+
+CV<- xgb.cv(params=list(objective="reg:linear",eta=1,max_depth=5),data=train_sparse_matrix,label=train_output_vector,nrounds=100,nfold=10,metrics = list("rmse"))
+
+print(CV,verbose=TRUE)
+```
+
+```{r}
+CV
+```
+
+```{r}
+
+```
+
+
+
+```{r}
+trainpreds=predict(CV,test_sparse_matrix)
+logxgboost<-exp(trainpreds)
+```
+```{r}
+train_boost
+
+```
+```{r}
+write.table(testfact, "D:/advance DM/allstate/testfact.csv")
+
+```
+
+```{r}
+#values<-ggplot(logxgboostvis,aes(logxgboost))
+#logxgboostvis<- data.frame(logxgboost)
+#View(logxgboostvis)
+values+geom_histogram(color="red")+ggtitle("PREDICTED VALUES BY XGBOOST MODEL")
+```
+
+```{r}
+ # values<- c(0.57987,0.54608,0.5676)
+  #methods<-c("linearregression","tree booosting","linear boosting")
+library(ggplot2)  
+ggplot(data = Null,aes(methods,values))
+```
+
